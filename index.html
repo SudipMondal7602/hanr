@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HandWrite</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Kalam:wght@300;400&family=Patrick+Hand&family=Indie+Flower&family=Shadows+Into+Light&family=Architects+Daughter&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f9f9f9;
+    color: #111;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+  }
+
+  header {
+    padding: 12px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+  .logo span { color: #999; font-weight: 400; }
+
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  .sidebar {
+    width: 240px;
+    background: #fff;
+    border-right: 1px solid #e8e8e8;
+    overflow-y: auto;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .grp-label {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: #bbb; margin-bottom: 8px;
+  }
+  textarea {
+    width: 100%; border: 1px solid #e0e0e0;
+    background: #fafafa; color: #111;
+    padding: 9px 10px; border-radius: 5px;
+    font-size: 12px; line-height: 1.6;
+    resize: vertical; min-height: 140px;
+    outline: none; font-family: inherit;
+  }
+  textarea:focus { border-color: #111; background: #fff; }
+
+  select {
+    width: 100%; border: 1px solid #e0e0e0;
+    background: #fff; color: #111;
+    padding: 7px 9px; border-radius: 5px;
+    font-size: 12px; outline: none; cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
+  select:focus { border-color: #111; }
+
+  .field { margin-bottom: 10px; }
+  .field-label {
+    font-size: 11px; color: #888; margin-bottom: 4px;
+    display: flex; justify-content: space-between;
+  }
+  .field-label span { color: #111; font-weight: 600; }
+
+  input[type="range"] {
+    width: 100%; height: 3px; accent-color: #111;
+    cursor: pointer; margin-top: 6px; display: block;
+  }
+  .toggle-row {
+    display: flex; align-items: center;
+    justify-content: space-between; padding: 5px 0;
+  }
+  .toggle-name { font-size: 12px; color: #444; }
+  .toggle {
+    width: 36px; height: 20px; background: #ddd;
+    border-radius: 10px; cursor: pointer;
+    position: relative; transition: background 0.2s;
+    border: none; outline: none; flex-shrink: 0;
+  }
+  .toggle::after {
+    content: ''; position: absolute;
+    width: 14px; height: 14px; background: #fff;
+    border-radius: 50%; top: 3px; left: 3px; transition: left 0.2s;
+  }
+  .toggle.on { background: #111; }
+  .toggle.on::after { left: 19px; }
+
+  .color-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .color-dot, .mdot {
+    width: 22px; height: 22px; border-radius: 50%;
+    cursor: pointer; outline: 2px solid transparent;
+    outline-offset: 2px; transition: outline 0.15s;
+    border: 2px solid transparent;
+  }
+  .color-dot.active, .mdot.active { outline-color: #111; }
+
+  .hr { height: 1px; background: #f0f0f0; }
+
+  .btn {
+    width: 100%; padding: 10px; background: #111;
+    color: #fff; border: none; border-radius: 5px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.75; }
+  .btn-sec {
+    background: #fff; color: #111;
+    border: 1px solid #ddd; margin-top: 6px;
+  }
+  .btn-sec:hover { background: #f5f5f5; opacity: 1; }
+
+  .preview-wrap {
+    flex: 1; overflow: auto; background: #ebebeb;
+    display: flex; justify-content: center; padding: 30px 20px;
+  }
+
+  #paper {
+    background: #fff; position: relative;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.1);
+    overflow: hidden; align-self: flex-start;
+  }
+
+  .ruled-lines { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+  .margin-line {
+    position: absolute; top: 0; bottom: 0;
+    width: 1.5px; pointer-events: none; z-index: 1;
+  }
+  .top-margin-line {
+    position: absolute; left: 0; right: 0;
+    height: 1.5px; pointer-events: none; z-index: 1;
+  }
+
+  .paper-inner {
+    position: relative; z-index: 2;
+    padding: 70px 60px 60px 120px;
+  }
+
+  .page-num {
+    position: absolute; top: 14px; right: 20px;
+    font-family: 'Caveat', cursive; font-size: 13px; color: #bbb;
+  }
+
+  /* Each line rendered as a separate span block */
+  .hw-line {
+    display: block;
+    position: relative;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Print CSS - critical fixes */
+  @media print {
+    @page { margin: 0; size: auto; }
+    html, body { margin: 0 !important; padding: 0 !important; background: white !important; height: auto !important; }
+    .sidebar, header { display: none !important; }
+    .preview-wrap {
+      padding: 0 !important; background: white !important;
+      display: block !important; overflow: visible !important;
+    }
+    #paper {
+      box-shadow: none !important;
+      width: 100% !important;
+      min-height: 100vh !important;
+      overflow: visible !important;
+    }
+    .ruled-lines, .margin-line, .top-margin-line { display: block !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Flash-HandWrite <span>Generator</span></div>
+  <div style="font-size:11px;color:#bbb;">Text → Handwritten</div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+
+    <div>
+      <div class="grp-label">Text</div>
+      <textarea id="inputText" placeholder="Type your assignment here..."></textarea>
+    </div>
+
+    <div class="hr"></div>
+
+    <div>
+      <div class="grp-label">Handwriting</div>
+      <div class="field">
+        <div class="field-label">Style</div>
+        <select id="fontSelect">
+          <option value="Caveat">Caveat — Natural</option>
+          <option value="Kalam">Kalam — School</option>
+          <option value="Patrick Hand">Patrick Hand — Neat</option>
+          <option value="Indie Flower">Indie Flower — Casual</option>
+          <option value="Shadows Into Light">Shadows Into Light</option>
+          <option value="Architects Daughter">Architect's Daughter</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-label">Size <span id="fontSizeVal">20px</span></div>
+        <input type="range" id="fontSize" min="14" max="32" value="20">
+      </div>
+      <div class="field">
+        <div class="field-label">Slant <span id="slantVal">-3°</span></div>
+        <input type="range" id="slant" min="-10" max="10" value="-3">
+      </div>
+      <div class="field">
+        <div class="field-label">Spacing <span id="spacingVal">0.5px</span></div>
+        <input type="range" id="spacing" min="-1" max="4" value="0.5" step="0.5">
+      </div>
+      <div class="field">
+        <div class="field-label">Wobble <span id="wobbleVal">Medium</span></div>
+        <input type="range" id="wobble" min="0" max="3" value="1" step="1">
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div>
+      <div class="grp-label">Ink Color</div>
+      <div class="color-row">
+        <div class="color-dot active" style="background:#1a3a8f" data-ink="#1a3a8f" onclick="setInk(this)" title="Blue"></div>
+        <div class="color-dot" style="background:#0d1f5c" data-ink="#0d1f5c" onclick="setInk(this)" title="Dark Blue"></div>
+        <div class="color-dot" style="background:#1a1a1a" data-ink="#1a1a1a" onclick="setInk(this)" title="Black"></div>
+        <div class="color-dot" style="background:#3a3a3a" data-ink="#3a3a3a" onclick="setInk(this)" title="Gray"></div>
+        <div class="color-dot" style="background:#4a2080" data-ink="#4a2080" onclick="setInk(this)" title="Purple"></div>
+        <div class="color-dot" style="background:#1a5c2a" data-ink="#1a5c2a" onclick="setInk(this)" title="Green"></div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div>
+      <div class="grp-label">Paper</div>
+      <div class="field">
+        <div class="field-label">Size</div>
+        <select id="paperSize">
+          <option value="794,1123">A4</option>
+          <option value="816,1056">US Letter</option>
+          <option value="680,960">B5</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-label">Color</div>
+        <select id="paperColor">
+          <option value="#ffffff">White</option>
+          <option value="#fdf8e8">Cream</option>
+          <option value="#fffde0">Light Yellow</option>
+          <option value="#f5f5f0">Light Gray</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-label">Line Height <span id="lineHVal">2.2</span></div>
+        <input type="range" id="lineH" min="1.6" max="3.2" value="2.2" step="0.1">
+      </div>
+      <div class="field">
+        <div class="field-label">Left Margin <span id="marginVal">80px</span></div>
+        <input type="range" id="marginSize" min="40" max="160" value="80">
+      </div>
+      <div class="field">
+        <div class="field-label">Top Margin <span id="topMarginVal">55px</span></div>
+        <input type="range" id="topMarginSize" min="20" max="160" value="55">
+      </div>
+      <div class="field">
+        <div class="field-label">Margin Line Color</div>
+        <div class="color-row" style="margin-top:6px">
+          <div class="mdot active" style="background:#dc4646" data-mc="rgba(220,70,70,0.65)" onclick="setMarginColor(this)" title="Red"></div>
+          <div class="mdot" style="background:#1a3a8f" data-mc="rgba(26,58,143,0.65)" onclick="setMarginColor(this)" title="Blue"></div>
+          <div class="mdot" style="background:#111" data-mc="rgba(17,17,17,0.55)" onclick="setMarginColor(this)" title="Black"></div>
+          <div class="mdot" style="background:#888" data-mc="rgba(136,136,136,0.55)" onclick="setMarginColor(this)" title="Gray"></div>
+          <div class="mdot" style="background:#1a5c2a" data-mc="rgba(26,92,42,0.65)" onclick="setMarginColor(this)" title="Green"></div>
+          <div class="mdot" style="background:#7a3000" data-mc="rgba(122,48,0,0.55)" onclick="setMarginColor(this)" title="Brown"></div>
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <div class="toggle-row">
+          <span class="toggle-name">Ruled Lines</span>
+          <button class="toggle on" id="ruledBtn" onclick="toggleRuled()"></button>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-name">Left Margin Line</span>
+          <button class="toggle on" id="marginBtn" onclick="toggleMargin()"></button>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-name">Top Margin Line</span>
+          <button class="toggle on" id="topMarginBtn" onclick="toggleTopMargin()"></button>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-name">Page Number</span>
+          <button class="toggle on" id="pageBtn" onclick="togglePage()"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div>
+      <div style="margin-bottom:8px">
+        <div class="grp-label" style="margin-bottom:6px">Presets</div>
+        <button class="btn btn-sec" onclick="applyPhotoPreset()" style="font-size:12px;padding:8px">My Assignment Style</button>
+      </div>
+      <button class="btn" onclick="render()">Generate</button>
+      <button class="btn btn-sec" onclick="window.print()">Print / Save PDF</button>
+    </div>
+
+  </div>
+
+  <div class="preview-wrap">
+    <div id="paper">
+      <div class="ruled-lines" id="ruledLines"></div>
+      <div class="margin-line" id="marginLine" style="left:80px;background:rgba(220,70,70,0.65)"></div>
+      <div class="top-margin-line" id="topMarginLine" style="top:55px;background:rgba(220,70,70,0.65)"></div>
+      <div class="paper-inner" id="paperInner">
+        <div class="page-num" id="pageNum">1</div>
+        <div id="output"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let inkColor = '#1a3a8f';
+  let marginColor = 'rgba(220,70,70,0.65)';
+  let ruled = true, showMargin = true, showTopMargin = true, showPage = true;
+  const $ = id => document.getElementById(id);
+
+  const wobbleLabels = ['None','Low','Medium','High'];
+
+  // Range listeners
+  const ranges = [
+    ['fontSize','fontSizeVal','px',0],
+    ['slant','slantVal','°',0],
+    ['spacing','spacingVal','px',1],
+    ['lineH','lineHVal','',1],
+    ['marginSize','marginVal','px',0],
+    ['topMarginSize','topMarginVal','px',0],
+  ];
+  ranges.forEach(([id, valId, unit, dec]) => {
+    $(id).addEventListener('input', function() {
+      $(valId).textContent = parseFloat(this.value).toFixed(dec) + unit;
+      render();
+    });
+  });
+  $('wobble').addEventListener('input', function() {
+    $('wobbleVal').textContent = wobbleLabels[parseInt(this.value)];
+    render();
+  });
+  $('fontSelect').addEventListener('change', render);
+  $('paperSize').addEventListener('change', () => { applySize(); render(); });
+  $('paperColor').addEventListener('change', () => {
+    $('paper').style.background = $('paperColor').value;
+  });
+
+  function setInk(el) {
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+    el.classList.add('active');
+    inkColor = el.dataset.ink;
+    render();
+  }
+
+  function setMarginColor(el) {
+    document.querySelectorAll('.mdot').forEach(d => d.classList.remove('active'));
+    el.classList.add('active');
+    marginColor = el.dataset.mc;
+    $('marginLine').style.background = marginColor;
+    $('topMarginLine').style.background = marginColor;
+  }
+
+  function toggleRuled() {
+    ruled = !ruled;
+    $('ruledBtn').classList.toggle('on', ruled);
+    drawRuled();
+  }
+  function toggleMargin() {
+    showMargin = !showMargin;
+    $('marginBtn').classList.toggle('on', showMargin);
+    $('marginLine').style.display = showMargin ? '' : 'none';
+  }
+  function toggleTopMargin() {
+    showTopMargin = !showTopMargin;
+    $('topMarginBtn').classList.toggle('on', showTopMargin);
+    $('topMarginLine').style.display = showTopMargin ? '' : 'none';
+  }
+  function togglePage() {
+    showPage = !showPage;
+    $('pageBtn').classList.toggle('on', showPage);
+    $('pageNum').style.display = showPage ? '' : 'none';
+  }
+
+  function applySize() {
+    const [w, h] = $('paperSize').value.split(',');
+    $('paper').style.width = w + 'px';
+    $('paper').style.minHeight = h + 'px';
+  }
+
+  // Seeded random for consistent wobble per character position
+  function seededRand(seed) {
+    const x = Math.sin(seed + 1) * 10000;
+    return x - Math.floor(x);
+  }
+
+  function drawRuled() {
+    if (!ruled) { $('ruledLines').innerHTML = ''; return; }
+    const h = $('paper').offsetHeight || 1123;
+    const lh = parseFloat($('lineH').value);
+    const fs = parseInt($('fontSize').value);
+    const gap = Math.round(fs * lh);
+    const topMg = parseInt($('topMarginSize').value);
+    let html = '';
+    // First line aligns with top margin, then repeats
+    for (let y = topMg + gap; y < h; y += gap)
+      html += `<div style="position:absolute;left:0;right:0;top:${y}px;height:1px;background:rgba(100,140,220,0.18)"></div>`;
+    $('ruledLines').innerHTML = html;
+  }
+
+  function getWobbleStyles(charIdx, wobbleLevel) {
+    if (wobbleLevel === 0) return { rotate: 0, translateY: 0, scaleY: 1 };
+    const r1 = seededRand(charIdx * 3);
+    const r2 = seededRand(charIdx * 3 + 1);
+    const r3 = seededRand(charIdx * 3 + 2);
+    const intensity = wobbleLevel * 0.8;
+    return {
+      rotate: (r1 - 0.5) * intensity * 3,
+      translateY: (r2 - 0.5) * intensity * 2.5,
+      scaleY: 1 + (r3 - 0.5) * intensity * 0.06,
+    };
+  }
+
+  function renderLine(lineText, font, size, slant, spacing, wobbleLevel, color) {
+    if (lineText.trim() === '') {
+      // Empty line - just spacing
+      return `<span class="hw-line" style="font-family:'${font}',cursive;font-size:${size}px;color:${color};display:block;">&nbsp;</span>`;
+    }
+
+    let html = `<span class="hw-line" style="font-family:'${font}',cursive;font-size:${size}px;color:${color};letter-spacing:${spacing}px;display:block;transform:skewX(${slant}deg);transform-origin:left center;">`;
+
+    if (wobbleLevel === 0) {
+      html += escHtml(lineText);
+    } else {
+      for (let i = 0; i < lineText.length; i++) {
+        const ch = lineText[i];
+        if (ch === ' ') { html += ' '; continue; }
+        const w = getWobbleStyles(i, wobbleLevel);
+        html += `<span style="display:inline-block;transform:rotate(${w.rotate}deg) translateY(${w.translateY}px) scaleY(${w.scaleY});transform-origin:center bottom;">${escHtml(ch)}</span>`;
+      }
+    }
+    html += '</span>';
+    return html;
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function render() {
+    const rawText = $('inputText').value || 'Type your text in the panel and click Generate.';
+    const font = $('fontSelect').value;
+    const size = parseInt($('fontSize').value);
+    const slant = parseFloat($('slant').value);
+    const spacing = parseFloat($('spacing').value);
+    const lh = parseFloat($('lineH').value);
+    const mg = parseInt($('marginSize').value);
+    const topMg = parseInt($('topMarginSize').value);
+    const wobbleLevel = parseInt($('wobble').value);
+
+    // Layout
+    const inner = $('paperInner');
+    inner.style.paddingLeft = (mg + 20) + 'px';
+    inner.style.paddingTop = (topMg + 10) + 'px';
+    inner.style.paddingRight = '60px';
+    inner.style.lineHeight = lh;
+
+    $('marginLine').style.left = mg + 'px';
+    $('topMarginLine').style.top = topMg + 'px';
+
+    // Render each line separately so they snap to ruled lines
+    const lines = rawText.split('\n');
+    const out = $('output');
+    out.style.lineHeight = lh;
+    out.innerHTML = lines.map(line => renderLine(line, font, size, slant, spacing, wobbleLevel, inkColor)).join('');
+
+    setTimeout(drawRuled, 80);
+  }
+
+  function applyPhotoPreset() {
+    $('fontSelect').value = 'Caveat';
+    $('fontSize').value = 20; $('fontSizeVal').textContent = '20px';
+    $('slant').value = -3; $('slantVal').textContent = '-3°';
+    $('spacing').value = 0.5; $('spacingVal').textContent = '0.5px';
+    $('lineH').value = 2.2; $('lineHVal').textContent = '2.2';
+    $('wobble').value = 1; $('wobbleVal').textContent = 'Low';
+    $('marginSize').value = 80; $('marginVal').textContent = '80px';
+    $('topMarginSize').value = 55; $('topMarginVal').textContent = '55px';
+    $('paperColor').value = '#ffffff'; $('paper').style.background = '#ffffff';
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+    document.querySelector('[data-ink="#1a3a8f"]').classList.add('active');
+    inkColor = '#1a3a8f';
+    document.querySelectorAll('.mdot').forEach(d => d.classList.remove('active'));
+    document.querySelector('.mdot').classList.add('active');
+    marginColor = 'rgba(220,70,70,0.65)';
+    $('marginLine').style.background = marginColor;
+    $('topMarginLine').style.background = marginColor;
+    ruled = true; $('ruledBtn').classList.add('on');
+    showMargin = true; $('marginBtn').classList.add('on'); $('marginLine').style.display = '';
+    showTopMargin = true; $('topMarginBtn').classList.add('on'); $('topMarginLine').style.display = '';
+    showPage = true; $('pageBtn').classList.add('on'); $('pageNum').style.display = '';
+    render();
+  }
+
+  // Init
+  applySize();
+  $('paper').style.background = '#ffffff';
+  render();
+</script>
+</body>
+</html>
